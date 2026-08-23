@@ -1,0 +1,205 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Bricolage Grotesque", "Instrument Sans", sans-serif;
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-ink: #0e1117;
+  --color-ink-2: #121722;
+  --color-panel: #161b26;
+  --color-panel-2: #1c2231;
+  --color-line: #2a3242;
+  --color-line-2: #3a4459;
+  --color-paper: #f1ede3;
+  --color-fog: #97a1b4;
+  --color-amber: #ffb224;
+  --color-coral: #ff5c4d;
+  --color-teal: #31d3bd;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Capa ambiente: luces de sala de emisión */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(950px 520px at 88% -12%, rgba(255, 92, 77, 0.13), transparent 62%),
+    radial-gradient(850px 520px at -8% 14%, rgba(255, 178, 36, 0.11), transparent 60%),
+    radial-gradient(760px 640px at 55% 115%, rgba(49, 211, 189, 0.09), transparent 62%);
+}
+
+/* Rejilla técnica de fondo */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(241, 237, 227, 0.027) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(241, 237, 227, 0.027) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(ellipse 120% 90% at 50% 0%, black 30%, transparent 92%);
+}
+
+::selection {
+  background: rgba(255, 178, 36, 0.85);
+  color: #141313;
+}
+
+/* ---------- barra de scroll ---------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a3242 transparent;
+}
+*::-webkit-scrollbar { height: 8px; width: 8px; }
+*::-webkit-scrollbar-thumb { background: #2a3242; border-radius: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- animaciones ---------- */
+@keyframes ve-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: ve-marquee 32s linear infinite;
+}
+.marquee-hover:hover .marquee-track { animation-play-state: paused; }
+
+@keyframes ve-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.7); opacity: 0.35; }
+}
+.pulse-dot { position: relative; }
+.pulse-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: ve-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes ve-blink { 50% { opacity: 0.25; } }
+.blink { animation: ve-blink 1.2s steps(2, start) infinite; }
+
+@keyframes ve-eq {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+.eq-bar { transform-origin: bottom; animation: ve-eq 0.9s ease-in-out infinite; }
+
+@keyframes ve-drift {
+  from { background-position: 0% 50%; }
+  to { background-position: 100% 50%; }
+}
+.drift-grad {
+  background-size: 200% 200%;
+  animation: ve-drift 9s ease-in-out infinite alternate;
+}
+
+@keyframes ve-scan {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(320%); }
+}
+.scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 34%;
+  background: linear-gradient(180deg, transparent, rgba(241, 237, 227, 0.045), transparent);
+  animation: ve-scan 5.5s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes ve-toast-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.toast-in { animation: ve-toast-in 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+
+@keyframes ve-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.fade-up { animation: ve-fade-up 0.35s ease both; }
+
+/* ---------- revelado al hacer scroll ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.reveal.is-in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .marquee-track, .eq-bar, .scanline, .pulse-dot::after, .drift-grad { animation: none; }
+  html { scroll-behavior: auto; }
+}
+
+/* ---------- componentes ---------- */
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.card {
+  background: linear-gradient(180deg, rgba(28, 34, 49, 0.6), rgba(22, 27, 38, 0.9));
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 178, 36, 0.55);
+  box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 178, 36, 0.12);
+}
+
+.title-ghost {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(241, 237, 227, 0.13);
+  user-select: none;
+}
+
+.input {
+  width: 100%;
+  background: var(--color-ink-2);
+  border: 1px solid var(--color-line);
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-paper);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.input:focus {
+  border-color: rgba(255, 178, 36, 0.7);
+  box-shadow: 0 0 0 3px rgba(255, 178, 36, 0.14);
+}
+.input::placeholder { color: #5c6577; }
+
+.btn-press { transition: transform 0.12s ease; }
+.btn-press:active { transform: scale(0.955); }
