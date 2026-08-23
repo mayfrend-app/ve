@@ -202,6 +202,10 @@ export const DEMO_ITEMS: ContentItem[] = [
     "Diseña las interfaces de tus proyectos con la herramienta que usa la industria.",
     "https://www.figma.com/",
     { platform: "web", sort_order: 2 }, 36),
+  demo("dp-4", "app", "Zona de juegos",
+    "Una pausa entre tutorial y tutorial: juegos gratis para jugar directo en el navegador.",
+    "https://itch.io/games/free",
+    { platform: "web", sort_order: 3 }, 34),
 
   demo("dc-1", "codigo", "Bienvenida al Bootcamp",
     "20% de descuento en tu primera inscripción al bootcamp 2026.",

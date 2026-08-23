@@ -38,7 +38,7 @@ export const TYPE_META: Record<ContentType, { label: string; plural: string; acc
   video: { label: "Video", plural: "Videos y tutoriales", accent: "#ff5c4d" },
   banner: { label: "Banner", plural: "Banners publicitarios", accent: "#ffb224" },
   anuncio: { label: "Anuncio", plural: "Anuncios (cinta)", accent: "#ff5c4d" },
-  app: { label: "App", plural: "Aplicaciones", accent: "#31d3bd" },
+  app: { label: "App / Juego", plural: "Aplicaciones y juegos", accent: "#31d3bd" },
   codigo: { label: "Código", plural: "Códigos y cupones", accent: "#ffb224" },
   nota: { label: "Nota", plural: "Notas e información", accent: "#31d3bd" },
 };

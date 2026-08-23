@@ -82,3 +82,67 @@ export function BrandMark({ size = 38 }: { size?: number }) {
     </svg>
   );
 }
+
+export function HeartIcon({ size = 16, ...p }: P) {
+  return (
+    <svg {...base(size)} {...p}>
+      <path
+        d="M12 20.6C7.2 16.4 3.4 13.1 3.4 9.1 3.4 6.4 5.5 4.4 8 4.4c1.6 0 3.1.8 4 2.1.9-1.3 2.4-2.1 4-2.1 2.5 0 4.6 2 4.6 4.7 0 4-3.8 7.3-8.6 11.5z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+export function PayPalIcon({ size = 16, ...p }: P) {
+  return (
+    <svg {...base(size)} {...p} viewBox="0 0 24 24">
+      <path
+        d="M7.6 21l.6-3.7H5.5L7.7 3.7h5.8c2.9 0 4.6 1.5 4.2 4.1-.4 2.9-2.5 4.4-5.4 4.4h-2l-1 6.8H7.6z"
+        fill="currentColor"
+        opacity="0.45"
+      />
+      <path
+        d="M10 19l.5-3.3h1.7c2.6 0 4.4-1.3 4.8-3.8.2-1.2 0-2.2-.7-2.9h1.2c2.2 0 3.5 1.4 3.1 3.7-.4 2.6-2.4 4-5.1 4h-1.7l-.6 3.3H10z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+export function BinanceIcon({ size = 16, ...p }: P) {
+  return (
+    <svg {...base(size)} {...p} viewBox="0 0 24 24" fill="currentColor">
+      <rect x="9.9" y="9.9" width="4.2" height="4.2" transform="rotate(45 12 12)" />
+      <rect x="10.7" y="3.3" width="2.6" height="2.6" transform="rotate(45 12 4.6)" />
+      <rect x="10.7" y="18.1" width="2.6" height="2.6" transform="rotate(45 12 19.4)" />
+      <rect x="3.3" y="10.7" width="2.6" height="2.6" transform="rotate(45 4.6 12)" />
+      <rect x="18.1" y="10.7" width="2.6" height="2.6" transform="rotate(45 19.4 12)" />
+    </svg>
+  );
+}
+
+export function PagoMovilIcon({ size = 16, ...p }: P) {
+  return (
+    <svg {...base(size)} {...p}>
+      <rect x="6.5" y="2.8" width="11" height="18.4" rx="2.6" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M13 7.2l-3.4 5.4h2.5l-1 4.2 3.5-5.6h-2.5l.9-4z" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function ZelleIcon({ size = 16, ...p }: P) {
+  return (
+    <svg {...base(size)} {...p}>
+      <rect x="3" y="3" width="18" height="18" rx="4.5" stroke="currentColor" strokeWidth="1.7" />
+      <path
+        d="M8.5 8.5h7L8.5 15.5h7"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </svg>
+  );
+}

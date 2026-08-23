@@ -8,7 +8,14 @@ import Lobby from "./components/Lobby";
 import Admin from "./components/Admin";
 import LoginModal, { type AdminState } from "./components/LoginModal";
 import Toasts, { type ToastItem } from "./components/Toasts";
-import { BrandMark } from "./components/Icons";
+import {
+  BrandMark,
+  HeartIcon,
+  PayPalIcon,
+  BinanceIcon,
+  PagoMovilIcon,
+  ZelleIcon,
+} from "./components/Icons";
 
 type View = "lobby" | "admin";
 
@@ -296,6 +303,42 @@ export default function App() {
                 </li>
               )}
             </ul>
+          </div>
+        </div>
+        {/* ------------------------------ donaciones ------------------------------ */}
+        <div className="relative border-t border-line bg-gradient-to-r from-coral/[0.08] via-amber/[0.05] to-teal/[0.07]">
+          <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-8 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-4">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-coral/40 bg-coral/10 text-coral">
+                <HeartIcon size={22} />
+              </span>
+              <div>
+                <p className="kicker text-coral">De corazón</p>
+                <h3 className="mt-1 font-display text-xl font-extrabold text-paper sm:text-2xl">
+                  Apoya a MAYFREND.VE
+                </h3>
+                <p className="mt-1 max-w-md text-[13px] leading-relaxed text-fog">
+                  Este canal se mantiene al aire gracias a la comunidad. Cualquier donación es
+                  bienvenida — grande o pequeña, se recibe de corazón. Gracias por estar.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2.5 lg:max-w-md lg:justify-end">
+              {[
+                { label: "PayPal", icon: <PayPalIcon size={16} />, color: "#58a8e0" },
+                { label: "Binance", icon: <BinanceIcon size={16} />, color: "#f3ba2f" },
+                { label: "Pago Móvil", icon: <PagoMovilIcon size={16} />, color: "#31d3bd" },
+                { label: "Zelle", icon: <ZelleIcon size={16} />, color: "#a78bfa" },
+              ].map((m) => (
+                <span
+                  key={m.label}
+                  className="flex items-center gap-2 rounded-lg border border-line bg-ink-2/70 px-3.5 py-2.5 text-[13px] font-semibold text-paper transition duration-200 hover:-translate-y-0.5 hover:border-amber/60"
+                >
+                  <span style={{ color: m.color }}>{m.icon}</span>
+                  {m.label}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
         <div className="relative border-t border-line/60 py-4">

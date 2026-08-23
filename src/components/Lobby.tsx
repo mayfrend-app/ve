@@ -209,7 +209,7 @@ export default function Lobby({ items, rt, onCopy }: Props) {
           <div className="card grid grid-cols-3 divide-x divide-line overflow-hidden">
             {[
               { k: "Videos", v: videos.length, c: "#ff5c4d" },
-              { k: "Apps", v: apps.length, c: "#31d3bd" },
+              { k: "Apps/Juegos", v: apps.length, c: "#31d3bd" },
               { k: "Códigos", v: codes.length, c: "#ffb224" },
             ].map((s) => (
               <div key={s.k} className="px-4 py-3.5">
@@ -343,7 +343,7 @@ export default function Lobby({ items, rt, onCopy }: Props) {
       {/* ---------------- aplicaciones ---------------- */}
       {apps.length > 0 && (
         <section className="mt-16">
-          <SectionHead num="04" kicker="Herramientas" title="Aplicaciones recomendadas" count={apps.length} accent="#31d3bd" />
+          <SectionHead num="04" kicker="Descubre" title="Aplicaciones y juegos" count={apps.length} accent="#31d3bd" />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {apps.map((a, i) => (
               <Reveal key={a.id} delay={i * 80}>
