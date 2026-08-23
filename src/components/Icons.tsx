@@ -66,12 +66,12 @@ export function PlatformIcon({ platform, size = 16, ...p }: P & { platform: stri
   return <GlobeIcon size={size} {...p} />;
 }
 
-export function VeMark({ size = 38 }: { size?: number }) {
+export function BrandMark({ size = 38 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
       <rect width="64" height="64" rx="14" fill="#FFB224" />
       <path
-        d="M14 18l10.5 28L32 27l7.5 19L50 18"
+        d="M16 44V20l16 15 16-15v24"
         fill="none"
         stroke="#0e1117"
         strokeWidth="6.5"

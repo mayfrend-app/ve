@@ -1,7 +1,7 @@
 import type { ContentItem } from "../lib/supabase";
 
 const FALLBACK = [
-  "Bienvenido al lobby de contenidos VE",
+  "Bienvenido al canal de contenidos de MAYFREND.VE",
   "Todo lo que publique el administrador aparece aquí al instante",
   "Conecta tu base de datos Supabase para ver tus propios anuncios en tiempo real",
 ];

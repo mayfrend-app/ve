@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { LogOut, ShieldCheck, X, Loader2 } from "lucide-react";
-import { GoogleIcon, VeMark } from "./Icons";
+import { GoogleIcon, BrandMark } from "./Icons";
 
 export type AdminState = "unknown" | "checking" | "yes" | "no" | "setup";
 
@@ -48,7 +48,7 @@ export default function LoginModal({
       >
         <div className="drift-grad relative flex items-center justify-between border-b border-line bg-gradient-to-r from-amber/15 via-coral/10 to-teal/10 px-5 py-4">
           <div className="flex items-center gap-3">
-            <VeMark size={34} />
+            <BrandMark size={34} />
             <div>
               <p className="font-display text-base font-bold leading-tight text-paper">
                 Acceso de administrador

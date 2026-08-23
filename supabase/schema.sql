@@ -1,25 +1,9 @@
 -- ============================================================================
--- VE·LOBBY — Esquema de Supabase
+-- MAYFREND.VE — Esquema de Supabase
 -- Ejecuta TODO este archivo en: Supabase Dashboard → SQL Editor → New query
 -- ============================================================================
 
--- 1) Función que decide si el usuario autenticado es administrador
-create or replace function public.is_admin()
-returns boolean
-language sql
-security definer
-set search_path = public
-stable
-as $$
-  select exists (
-    select 1
-    from public.admins a
-    join auth.users u on u.id = auth.uid()
-    where lower(a.email) = lower(u.email)
-  );
-$$;
-
--- 2) Tabla de contenido del lobby (videos, banners, anuncios, apps, códigos, notas)
+-- 1) Primero crear las tablas
 create table if not exists public.content (
   id          uuid primary key default gen_random_uuid(),
   type        text not null check (type in ('video','banner','anuncio','app','codigo','nota')),
@@ -34,12 +18,34 @@ create table if not exists public.content (
   created_at  timestamptz not null default now()
 );
 
--- 3) Tabla de administradores (correos de Google autorizados)
 create table if not exists public.admins (
   id         uuid primary key default gen_random_uuid(),
   email      text not null unique,
   created_at timestamptz not null default now()
 );
+
+-- ============================================================================
+-- Administrador principal (pre-registrado por el dueño del canal)
+-- ============================================================================
+insert into public.admins (email)
+values ('v19629049@gmail.com')
+on conflict (email) do nothing;
+
+-- 2) Luego crear la función que depende de ambas tablas
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1
+    from public.admins a
+    join auth.users u on u.id = auth.uid()
+    where lower(a.email) = lower(u.email)
+  );
+$$;
 
 -- ============================================================================
 -- Row Level Security
@@ -78,7 +84,8 @@ create policy "admins_authenticated_read"
   using (true);
 
 -- El PRIMER inicio de sesión con Google se auto-registra como admin
--- (solo cuando la tabla está vacía; después la tabla queda cerrada)
+-- (solo cuando la tabla está vacía; como el schema ya registra al dueño,
+--  esta política queda como respaldo y la tabla permanece cerrada)
 drop policy if exists "admins_first_insert" on public.admins;
 create policy "admins_first_insert"
   on public.admins for insert

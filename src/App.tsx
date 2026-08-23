@@ -8,7 +8,7 @@ import Lobby from "./components/Lobby";
 import Admin from "./components/Admin";
 import LoginModal, { type AdminState } from "./components/LoginModal";
 import Toasts, { type ToastItem } from "./components/Toasts";
-import { VeMark } from "./components/Icons";
+import { BrandMark } from "./components/Icons";
 
 type View = "lobby" | "admin";
 
@@ -124,10 +124,10 @@ export default function App() {
             className="btn-press flex items-center gap-2.5"
             aria-label="Ir al lobby"
           >
-            <VeMark size={34} />
+            <BrandMark size={34} />
             <span className="text-left leading-none">
               <span className="block font-display text-lg font-extrabold tracking-tight text-paper">
-                VE<span className="text-amber">·</span>LOBBY
+                MAYFREND<span className="text-amber">.VE</span>
               </span>
               <span className="kicker mt-0.5 block text-[9px] text-fog">contenidos al aire</span>
             </span>
@@ -235,13 +235,15 @@ export default function App() {
       {/* ------------------------------- footer ------------------------------- */}
       <footer className="relative mt-auto overflow-hidden border-t border-line bg-ink-2/60">
         <p className="title-ghost pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 select-none whitespace-nowrap text-[120px] leading-none sm:text-[180px]">
-          VE·LOBBY
+          MAYFREND.VE
         </p>
         <div className="relative mx-auto grid w-full max-w-6xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr]">
           <div>
             <div className="flex items-center gap-2.5">
-              <VeMark size={30} />
-              <p className="font-display text-base font-extrabold text-paper">VE·LOBBY</p>
+              <BrandMark size={30} />
+              <p className="font-display text-base font-extrabold text-paper">
+                MAYFREND<span className="text-amber">.VE</span>
+              </p>
             </div>
             <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-fog">
               Un canal de contenidos siempre al aire: tutoriales de YouTube, TikTok e Instagram en
@@ -298,7 +300,7 @@ export default function App() {
         </div>
         <div className="relative border-t border-line/60 py-4">
           <p className="mx-auto max-w-6xl px-4 font-mono text-[11px] tracking-wider text-fog/70 sm:px-6">
-            © {new Date().getFullYear()} VE·LOBBY — alojado en mayfrend-app.github.io/ve · hecho
+            © {new Date().getFullYear()} MAYFREND.VE — alojado en mayfrend-app.github.io/ve · hecho
             para emitirse en tiempo real
           </p>
         </div>
