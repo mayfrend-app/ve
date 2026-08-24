@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { LogIn, LayoutDashboard, ShieldCheck } from "lucide-react";
-import { supabase, hasSupabaseConfig } from "./lib/supabase";
+import {
+  supabase,
+  hasSupabaseConfig,
+  DONATION_METHODS,
+  type Donation,
+} from "./lib/supabase";
 import { useContent } from "./hooks/useContent";
 import Ticker from "./components/Ticker";
 import Lobby from "./components/Lobby";
@@ -15,7 +20,70 @@ import {
   BinanceIcon,
   PagoMovilIcon,
   ZelleIcon,
+  TransferIcon,
 } from "./components/Icons";
+
+const METHOD_ICONS: Record<string, (size: number) => React.ReactNode> = {
+  paypal: (s) => <PayPalIcon size={s} />,
+  binance: (s) => <BinanceIcon size={s} />,
+  pago_movil: (s) => <PagoMovilIcon size={s} />,
+  zelle: (s) => <ZelleIcon size={s} />,
+  transferencia: (s) => <TransferIcon size={s} />,
+};
+
+function DonationChips({
+  donations,
+  onCopy,
+}: {
+  donations: Donation[];
+  onCopy: (text: string) => void;
+}) {
+  if (donations.length === 0) {
+    return (
+      <p className="max-w-md text-[13px] leading-relaxed text-fog lg:text-right">
+        El administrador aún no ha publicado métodos de donación. Vuelve pronto.
+      </p>
+    );
+  }
+  return (
+    <div className="grid w-full gap-2 sm:grid-cols-2 lg:max-w-md">
+      {donations.map((d) => {
+        const meta = DONATION_METHODS[d.method];
+        const color = meta?.color ?? "#97a1b4";
+        const icon = (METHOD_ICONS[d.method] ?? METHOD_ICONS.transferencia)(16);
+        const copyValue = d.detail;
+        return (
+          <button
+            key={d.id}
+            onClick={() => copyValue && onCopy(copyValue)}
+            className="btn-press group flex items-center gap-2.5 rounded-lg border border-line bg-ink-2/70 px-3 py-2.5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-amber/60"
+            title={copyValue ? "Copiar datos" : undefined}
+          >
+            <span style={{ color }} className="shrink-0">
+              {icon}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] font-bold text-paper">
+                {d.label || meta?.label || d.method}
+              </span>
+              {d.detail && (
+                <span className="block truncate font-mono text-[11px] text-fog group-hover:text-amber">
+                  {d.detail}
+                </span>
+              )}
+            </span>
+            {copyValue && (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="shrink-0 text-fog group-hover:text-amber" aria-hidden>
+                <path d="M8 10.5V7a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <rect x="5" y="10" width="9" height="9" rx="2" stroke="currentColor" strokeWidth="1.8" />
+              </svg>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 type View = "lobby" | "admin";
 
@@ -181,7 +249,7 @@ export default function App() {
                       : "bg-fog text-fog"
                 }`}
               />
-              {content.rt === "live" ? "Realtime" : content.rt === "connecting" ? "Conectando" : content.isDemo ? "Demo" : "Local"}
+              {content.rt === "live" ? "Realtime" : content.rt === "connecting" ? "Conectando" : "Sin conexión"}
             </span>
 
             {isAdmin ? (
@@ -209,7 +277,7 @@ export default function App() {
       </header>
 
       {/* cinta de anuncios */}
-      <Ticker anuncios={anuncios} />
+      {anuncios.length > 0 && <Ticker anuncios={anuncios} />}
 
       {/* ------------------------------- contenido ------------------------------- */}
       {content.loading ? (
@@ -289,12 +357,8 @@ export default function App() {
               <li>
                 Realtime:{" "}
                 <span className={content.rt === "live" ? "text-teal" : "text-amber"}>
-                  {content.rt === "live" ? "conectado" : content.rt === "connecting" ? "conectando…" : "modo demo"}
+                  {content.rt === "live" ? "conectado" : content.rt === "connecting" ? "conectando…" : "sin conexión"}
                 </span>
-              </li>
-              <li>
-                Fuente:{" "}
-                <span className="text-paper">{content.isDemo ? "demostración" : "Supabase"}</span>
               </li>
               {content.lastSync && (
                 <li>
@@ -323,22 +387,10 @@ export default function App() {
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2.5 lg:max-w-md lg:justify-end">
-              {[
-                { label: "PayPal", icon: <PayPalIcon size={16} />, color: "#58a8e0" },
-                { label: "Binance", icon: <BinanceIcon size={16} />, color: "#f3ba2f" },
-                { label: "Pago Móvil", icon: <PagoMovilIcon size={16} />, color: "#31d3bd" },
-                { label: "Zelle", icon: <ZelleIcon size={16} />, color: "#a78bfa" },
-              ].map((m) => (
-                <span
-                  key={m.label}
-                  className="flex items-center gap-2 rounded-lg border border-line bg-ink-2/70 px-3.5 py-2.5 text-[13px] font-semibold text-paper transition duration-200 hover:-translate-y-0.5 hover:border-amber/60"
-                >
-                  <span style={{ color: m.color }}>{m.icon}</span>
-                  {m.label}
-                </span>
-              ))}
-            </div>
+            <DonationChips
+              donations={content.donations.filter((d) => d.active)}
+              onCopy={copyCode}
+            />
           </div>
         </div>
         <div className="relative border-t border-line/60 py-4">

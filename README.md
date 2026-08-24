@@ -11,6 +11,8 @@ todos, al instante y en todos los dispositivos.
   de forma automática, uno tras otro.
 - 📢 **Banners, publicidad y anuncios** con lo más nuevo del canal.
 - 📱 **Aplicaciones y juegos** recomendados para descubrir.
+- 📦 **Descargas** de aplicaciones, programas, juegos, videos y manuales (archivos propios o
+  enlaces de Drive, Mega, FileTransfer…).
 - 🎟️ **Códigos y cupones** listos para copiar y canjear.
 - 📝 **Notas e información** importante para la comunidad.
 

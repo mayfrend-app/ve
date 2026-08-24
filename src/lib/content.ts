@@ -1,4 +1,4 @@
-import { supabase, type ContentItem, type ContentType } from "./supabase";
+import { supabase, type ContentItem, type Donation } from "./supabase";
 
 /* ------------------------------ utilidades ------------------------------ */
 
@@ -17,9 +17,11 @@ export const ytThumb = (id: string, q: "mqdefault" | "hqdefault" = "mqdefault") 
 
 export type Result = { ok: boolean; error?: string };
 
+const NO_DB: Result = { ok: false, error: "Supabase no está configurado." };
+
 export interface ContentInput {
   id?: string;
-  type: ContentType;
+  type: ContentItem["type"];
   title: string;
   description: string;
   url: string;
@@ -29,22 +31,30 @@ export interface ContentInput {
   active: boolean;
 }
 
-/* ------------------------------- CRUD remoto ----------------------------- */
+export interface DonationInput {
+  id?: string;
+  method: string;
+  label: string;
+  detail: string;
+  detail2: string;
+  active: boolean;
+}
 
-export async function fetchContent(): Promise<{ items: ContentItem[]; fromDb: boolean }> {
-  if (!supabase) return { items: DEMO_ITEMS, fromDb: false };
+/* ------------------------------ CRUD contenido ----------------------------- */
+
+export async function fetchContent(): Promise<ContentItem[]> {
+  if (!supabase) return [];
   const { data, error } = await supabase
     .from("content")
     .select("*")
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
-  if (error || !data) return { items: DEMO_ITEMS, fromDb: false };
-  if (data.length === 0) return { items: DEMO_ITEMS, fromDb: false };
-  return { items: data as ContentItem[], fromDb: true };
+  if (error || !data) return [];
+  return data as ContentItem[];
 }
 
 export async function saveContent(input: ContentInput): Promise<Result> {
-  if (!supabase) return { ok: false, error: "Supabase no está configurado." };
+  if (!supabase) return NO_DB;
   const payload = {
     type: input.type,
     title: input.title.trim(),
@@ -61,27 +71,24 @@ export async function saveContent(input: ContentInput): Promise<Result> {
     return error ? { ok: false, error: error.message } : { ok: true };
   }
 
-  // nuevo elemento: se coloca al final de su grupo
   const { data: group } = await supabase
     .from("content")
     .select("sort_order")
     .eq("type", input.type);
   const max = (group ?? []).reduce((m, r) => Math.max(m, r.sort_order ?? 0), -1);
 
-  const { error } = await supabase
-    .from("content")
-    .insert({ ...payload, sort_order: max + 1 });
+  const { error } = await supabase.from("content").insert({ ...payload, sort_order: max + 1 });
   return error ? { ok: false, error: error.message } : { ok: true };
 }
 
 export async function deleteContent(id: string): Promise<Result> {
-  if (!supabase) return { ok: false, error: "Supabase no está configurado." };
+  if (!supabase) return NO_DB;
   const { error } = await supabase.from("content").delete().eq("id", id);
   return error ? { ok: false, error: error.message } : { ok: true };
 }
 
 export async function setActiveContent(id: string, active: boolean): Promise<Result> {
-  if (!supabase) return { ok: false, error: "Supabase no está configurado." };
+  if (!supabase) return NO_DB;
   const { error } = await supabase.from("content").update({ active }).eq("id", id);
   return error ? { ok: false, error: error.message } : { ok: true };
 }
@@ -99,7 +106,7 @@ export async function moveContent(
   const idx = group.findIndex((g) => g.id === id);
   const other = group[idx + dir];
   if (!other) return { ok: true };
-  if (!supabase) return { ok: false, error: "Supabase no está configurado." };
+  if (!supabase) return NO_DB;
 
   const [{ error: e1 }, { error: e2 }] = await Promise.all([
     supabase.from("content").update({ sort_order: other.sort_order }).eq("id", item.id),
@@ -109,115 +116,43 @@ export async function moveContent(
   return err ? { ok: false, error: err.message } : { ok: true };
 }
 
-/* ------------------------- contenido de demostración --------------------- */
+/* ------------------------------ CRUD donaciones ----------------------------- */
 
-const IMG = {
-  bootcamp: "https://image.qwenlm.ai/generated-images/d0ff5f98-2ee9-483f-822e-8e1ecf102e4c/_result.png",
-  app: "https://image.qwenlm.ai/generated-images/2e68a645-6e6a-4965-9e67-706d048e0847/_result.png",
-  comunidad: "https://image.qwenlm.ai/generated-images/8e8119c4-716c-41e5-9a2e-d44adaba87ac/_result.png",
-};
+export async function fetchDonations(): Promise<Donation[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("donations")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (error || !data) return [];
+  return data as Donation[];
+}
 
-const d = (offsetHours: number) =>
-  new Date(Date.now() - offsetHours * 3600_000).toISOString();
+export async function saveDonation(input: DonationInput): Promise<Result> {
+  if (!supabase) return NO_DB;
+  const payload = {
+    method: input.method,
+    label: input.label.trim(),
+    detail: input.detail.trim(),
+    detail2: input.detail2.trim(),
+    active: input.active,
+  };
 
-const demo = (
-  id: string,
-  type: ContentType,
-  title: string,
-  description: string,
-  url: string,
-  extra: Partial<ContentItem> = {},
-  hoursAgo = 1
-): ContentItem => ({
-  id,
-  type,
-  title,
-  description,
-  url,
-  image_url: "",
-  platform: "web",
-  code_text: "",
-  active: true,
-  sort_order: 0,
-  created_at: d(hoursAgo),
-  ...extra,
-});
+  if (input.id) {
+    const { error } = await supabase.from("donations").update(payload).eq("id", input.id);
+    return error ? { ok: false, error: error.message } : { ok: true };
+  }
 
-export const DEMO_ITEMS: ContentItem[] = [
-  demo("dv-1", "video", "Curso completo de Python desde cero",
-    "Variables, funciones, bucles y proyectos reales en un solo video. Ideal para tu primer lenguaje.",
-    "https://www.youtube.com/watch?v=rfscVS0vtbw",
-    { platform: "youtube", sort_order: 0 }, 26),
-  demo("dv-2", "video", "JavaScript moderno: curso intensivo",
-    "Todo lo esencial del lenguaje de la web: DOM, eventos, fetch y async/await explicado sin rodeos.",
-    "https://www.youtube.com/watch?v=hdI2bqOjy3c",
-    { platform: "youtube", sort_order: 1 }, 24),
-  demo("dv-3", "video", "Git y GitHub para principiantes",
-    "Aprende a versionar tu código, crear ramas y colaborar como en un equipo profesional.",
-    "https://www.youtube.com/watch?v=RGOj5yH7evk",
-    { platform: "youtube", sort_order: 2 }, 22),
-  demo("dv-4", "video", "React JS desde cero",
-    "Componentes, hooks y estado: construye interfaces modernas paso a paso.",
-    "https://www.youtube.com/watch?v=w7ejDZ8SWv8",
-    { platform: "youtube", sort_order: 3 }, 20),
-  demo("dv-5", "video", "Node.js y APIs REST paso a paso",
-    "Monta tu primer backend con rutas, middleware y conexión a base de datos.",
-    "https://www.youtube.com/watch?v=fBNz5xF-Kx4",
-    { platform: "youtube", sort_order: 4 }, 18),
-  demo("dv-6", "video", "Tips de código en 60 segundos",
-    "Serie de videos cortos con trucos de programación para ver en el móvil.",
-    "https://www.tiktok.com/@midudev",
-    { platform: "tiktok", sort_order: 5 }, 12),
-  demo("dv-7", "video", "Reels: trucos de productividad dev",
-    "Los mejores reels de programación curados para tu feed.",
-    "https://www.instagram.com/explore/tags/programacion/",
-    { platform: "instagram", sort_order: 6 }, 10),
+  const { data: group } = await supabase.from("donations").select("sort_order");
+  const max = (group ?? []).reduce((m, r) => Math.max(m, r.sort_order ?? 0), -1);
 
-  demo("db-1", "banner", "Bootcamp de Desarrollo Web 2026",
-    "Inscripciones abiertas: 12 semanas, proyectos reales y mentoría en vivo.",
-    "https://www.youtube.com/watch?v=rfscVS0vtbw",
-    { image_url: IMG.bootcamp, sort_order: 0 }, 30),
-  demo("db-2", "banner", "MAYFREND.VE Móvil ya disponible",
-    "Lleva el canal contigo: descarga la beta y mira tutoriales donde quieras.",
-    "https://github.com/mayfrend-app/ve",
-    { image_url: IMG.app, sort_order: 1 }, 28),
-  demo("db-3", "banner", "Únete a la comunidad MAYFREND.VE",
-    "Comparte tus proyectos, resuelve dudas y entérate primero de cada estreno.",
-    "https://github.com/mayfrend-app/ve",
-    { image_url: IMG.comunidad, sort_order: 2 }, 25),
+  const { error } = await supabase.from("donations").insert({ ...payload, sort_order: max + 1 });
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
 
-  demo("da-1", "anuncio", "Nuevo tutorial de React todos los viernes a las 19:00", "", "", { sort_order: 0 }, 8),
-  demo("da-2", "anuncio", "Códigos de descuento disponibles en la sección Códigos", "", "", { sort_order: 1 }, 7),
-  demo("da-3", "anuncio", "Síguenos en TikTok e Instagram para tips diarios de programación", "", "", { sort_order: 2 }, 6),
-
-  demo("dp-1", "app", "MAYFREND Player",
-    "El reproductor oficial del canal: cola automática, atajos de teclado y modo cine.",
-    "https://github.com/mayfrend-app/ve",
-    { platform: "web", sort_order: 0 }, 40),
-  demo("dp-2", "app", "CodeSandbox",
-    "Editor online para practicar lo que aprendes en los tutoriales, sin instalar nada.",
-    "https://codesandbox.io/",
-    { platform: "web", sort_order: 1 }, 38),
-  demo("dp-3", "app", "Figma",
-    "Diseña las interfaces de tus proyectos con la herramienta que usa la industria.",
-    "https://www.figma.com/",
-    { platform: "web", sort_order: 2 }, 36),
-  demo("dp-4", "app", "Zona de juegos",
-    "Una pausa entre tutorial y tutorial: juegos gratis para jugar directo en el navegador.",
-    "https://itch.io/games/free",
-    { platform: "web", sort_order: 3 }, 34),
-
-  demo("dc-1", "codigo", "Bienvenida al Bootcamp",
-    "20% de descuento en tu primera inscripción al bootcamp 2026.",
-    "", { code_text: "MAYFREND-WELCOME-2026", sort_order: 0 }, 16),
-  demo("dc-2", "codigo", "Acceso beta a MAYFREND.VE Móvil",
-    "Canjea este código en la app para desbloquear la beta cerrada.",
-    "", { code_text: "MAYFREND-BETA-7842", sort_order: 1 }, 14),
-
-  demo("dn-1", "nota", "Cómo funciona MAYFREND.VE",
-    "El reproductor principal encadena todos los videos de la cartelera de forma automática. Puedes pausar la cola, silenciar o elegir cualquier video desde la parrilla. Todo lo que el administrador publique aparece aquí al instante, en todos los dispositivos.",
-    "", { sort_order: 0 }, 50),
-  demo("dn-2", "nota", "Ruta de aprendizaje sugerida",
-    "1) Python o JavaScript desde cero · 2) Git y GitHub · 3) React para el frontend · 4) Node.js para el backend. Cada paso tiene su tutorial en la cartelera; avanza en orden y practica con los proyectos propuestos.",
-    "", { sort_order: 1 }, 48),
-];
+export async function deleteDonation(id: string): Promise<Result> {
+  if (!supabase) return NO_DB;
+  const { error } = await supabase.from("donations").delete().eq("id", id);
+  return error ? { ok: false, error: error.message } : { ok: true };
+}

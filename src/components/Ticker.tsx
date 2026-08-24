@@ -1,13 +1,7 @@
 import type { ContentItem } from "../lib/supabase";
 
-const FALLBACK = [
-  "Bienvenido al canal de contenidos de MAYFREND.VE",
-  "Todo lo que publique el administrador aparece aquí al instante",
-  "Conecta tu base de datos Supabase para ver tus propios anuncios en tiempo real",
-];
-
 export default function Ticker({ anuncios }: { anuncios: ContentItem[] }) {
-  const msgs = anuncios.length > 0 ? anuncios.map((a) => a.title) : FALLBACK;
+  const msgs = anuncios.map((a) => a.title);
   const strip = [...msgs, ...msgs];
 
   return (

@@ -146,3 +146,30 @@ export function ZelleIcon({ size = 16, ...p }: P) {
     </svg>
   );
 }
+
+export function TransferIcon({ size = 16, ...p }: P) {
+  return (
+    <svg {...base(size)} {...p}>
+      <path d="M7 9.5h11M7 9.5l3-3M7 9.5l3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M17 15H6M17 15l-3-3M17 15l-3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function DownloadIcon({ size = 16, ...p }: P) {
+  return (
+    <svg {...base(size)} {...p}>
+      <path d="M12 4v10M12 14l-4-4M12 14l4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4.5 17.5v1a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function FileBoxIcon({ size = 16, ...p }: P) {
+  return (
+    <svg {...base(size)} {...p}>
+      <path d="M12 3l8 3v12l-8 3-8-3V6l8-3z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M4 6l8 3 8-3M12 9v12" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  );
+}

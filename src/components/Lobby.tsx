@@ -4,7 +4,7 @@ import type { ContentItem } from "../lib/supabase";
 import { PLATFORM_META } from "../lib/supabase";
 import { youtubeId, ytThumb } from "../lib/content";
 import Player from "./Player";
-import { PlatformIcon } from "./Icons";
+import { PlatformIcon, FileBoxIcon, DownloadIcon } from "./Icons";
 
 /* ------------------------------ reveal on scroll ------------------------------ */
 
@@ -159,6 +159,7 @@ export default function Lobby({ items, rt, onCopy }: Props) {
   const videos = useMemo(() => active.filter((i) => i.type === "video"), [active]);
   const banners = useMemo(() => active.filter((i) => i.type === "banner"), [active]);
   const apps = useMemo(() => active.filter((i) => i.type === "app"), [active]);
+  const descargas = useMemo(() => active.filter((i) => i.type === "descarga"), [active]);
   const codes = useMemo(() => active.filter((i) => i.type === "codigo"), [active]);
   const notes = useMemo(() => active.filter((i) => i.type === "nota"), [active]);
 
@@ -206,10 +207,11 @@ export default function Lobby({ items, rt, onCopy }: Props) {
         </Reveal>
 
         <Reveal delay={120}>
-          <div className="card grid grid-cols-3 divide-x divide-line overflow-hidden">
+          <div className="card grid grid-cols-4 divide-x divide-line overflow-hidden">
             {[
               { k: "Videos", v: videos.length, c: "#ff5c4d" },
-              { k: "Apps/Juegos", v: apps.length, c: "#31d3bd" },
+              { k: "Apps", v: apps.length, c: "#31d3bd" },
+              { k: "Descargas", v: descargas.length, c: "#a78bfa" },
               { k: "Códigos", v: codes.length, c: "#ffb224" },
             ].map((s) => (
               <div key={s.k} className="px-4 py-3.5">
@@ -236,7 +238,7 @@ export default function Lobby({ items, rt, onCopy }: Props) {
               ? "Tiempo real conectado — los cambios se sincronizan solos"
               : rt === "connecting"
                 ? "Conectando con Supabase Realtime…"
-                : "Sin conexión realtime (modo demo)"}
+                : "Sin conexión en tiempo real"}
           </p>
         </Reveal>
       </section>
@@ -248,6 +250,27 @@ export default function Lobby({ items, rt, onCopy }: Props) {
           <Player queue={videos} idx={Math.min(playIdx, Math.max(0, videos.length - 1))} onIdx={setPlayIdx} />
         </Reveal>
       </section>
+
+      {/* ---------------- estado vacío ---------------- */}
+      {active.length === 0 && (
+        <section className="mt-16">
+          <Reveal>
+            <div className="card flex flex-col items-center gap-3 border-dashed px-6 py-14 text-center">
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-line bg-panel-2 text-amber">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" strokeWidth="1.7" />
+                  <path d="M10 9.5l5 2.5-5 2.5v-5z" fill="currentColor" />
+                </svg>
+              </span>
+              <h3 className="font-display text-xl font-extrabold text-paper">Aún no hay contenido publicado</h3>
+              <p className="max-w-md text-sm leading-relaxed text-fog">
+                Cuando el administrador publique videos, banners, aplicaciones, descargas, códigos o
+                notas, aparecerán aquí al instante y en todos los dispositivos.
+              </p>
+            </div>
+          </Reveal>
+        </section>
+      )}
 
       {/* ---------------- banners ---------------- */}
       {banners.length > 0 && (
@@ -300,42 +323,11 @@ export default function Lobby({ items, rt, onCopy }: Props) {
               <Reveal
                 key={v.id}
                 delay={(i % 3) * 80}
-                className={`h-full ${i === 0 ? "sm:col-span-2" : ""}`}
+                className={`h-full ${i === 0 ? "sm:col-span-2 lg:col-span-2" : ""}`}
               >
                 <VideoCard v={v} big={i === 0} onPlay={() => play(v.id)} />
               </Reveal>
             ))}
-            <Reveal
-              delay={160}
-              className={`h-full ${
-                ((3 - ((videos.length + 2) % 3)) % 3 || 3) === 3
-                  ? "lg:col-span-3"
-                  : ((3 - ((videos.length + 2) % 3)) % 3 || 3) === 2
-                    ? "lg:col-span-2"
-                    : ""
-              }`}
-            >
-              <a
-                href="https://github.com/mayfrend-app/ve"
-                target="_blank"
-                rel="noreferrer"
-                className="group flex h-full min-h-[210px] w-full flex-col justify-between rounded-xl border border-dashed border-line bg-panel/40 p-5 transition hover:border-amber/60 hover:bg-panel"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="kicker text-fog">Espacio abierto</span>
-                  <ArrowUpRight size={18} className="text-fog transition group-hover:text-amber" />
-                </div>
-                <div>
-                  <h3 className="font-display text-xl font-extrabold text-paper">
-                    ¿Falta un tutorial en la cartelera?
-                  </h3>
-                  <p className="mt-1.5 max-w-md text-sm leading-relaxed text-fog">
-                    Propón un video, canal o curso al administrador del canal y podrá aparecer aquí
-                    para todo el público, al instante y en todos los dispositivos.
-                  </p>
-                </div>
-              </a>
-            </Reveal>
           </div>
         </section>
       )}
@@ -374,10 +366,63 @@ export default function Lobby({ items, rt, onCopy }: Props) {
         </section>
       )}
 
+      {/* ---------------- descargas ---------------- */}
+      {descargas.length > 0 && (
+        <section className="mt-16">
+          <SectionHead num="05" kicker="Archivos" title="Descargas" count={descargas.length} accent="#a78bfa" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {descargas.map((d, i) => (
+              <Reveal key={d.id} delay={i * 80}>
+                <div className="card card-hover group flex h-full flex-col p-5">
+                  <div className="flex items-start gap-3">
+                    {d.image_url ? (
+                      <img
+                        src={d.image_url}
+                        alt={d.title}
+                        loading="lazy"
+                        className="h-11 w-11 shrink-0 rounded-xl border border-line object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-panel-2 text-[#a78bfa] transition group-hover:border-[#a78bfa]/60">
+                        <FileBoxIcon size={20} />
+                      </span>
+                    )}
+                    <div className="min-w-0">
+                      <h3 className="truncate font-display text-base font-bold text-paper">{d.title}</h3>
+                      <span
+                        className="kicker mt-0.5 inline-block"
+                        style={{ color: PLATFORM_META[d.platform]?.color ?? "#97a1b4" }}
+                      >
+                        {PLATFORM_META[d.platform]?.label ?? "Enlace"}
+                      </span>
+                    </div>
+                  </div>
+                  {d.description && (
+                    <p className="mt-2.5 flex-1 text-sm leading-relaxed text-fog">{d.description}</p>
+                  )}
+                  {d.url && (
+                    <a
+                      href={d.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      download
+                      className="btn-press mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#a78bfa] px-3 py-2.5 text-sm font-bold text-ink transition hover:brightness-110"
+                    >
+                      <DownloadIcon size={16} />
+                      Descargar
+                    </a>
+                  )}
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ---------------- códigos ---------------- */}
       {codes.length > 0 && (
         <section className="mt-16">
-          <SectionHead num="05" kicker="Canjeables" title="Códigos y cupones" count={codes.length} accent="#ffb224" />
+          <SectionHead num="06" kicker="Canjeables" title="Códigos y cupones" count={codes.length} accent="#ffb224" />
           <div className="grid gap-4 sm:grid-cols-2">
             {codes.map((c, i) => (
               <CopyRow key={c.id} c={c} delay={i * 80} onCopy={onCopy} />
@@ -389,7 +434,7 @@ export default function Lobby({ items, rt, onCopy }: Props) {
       {/* ---------------- notas ---------------- */}
       {notes.length > 0 && (
         <section className="mt-16">
-          <SectionHead num="06" kicker="Redacción" title="Notas e información" count={notes.length} accent="#31d3bd" />
+          <SectionHead num="07" kicker="Redacción" title="Notas e información" count={notes.length} accent="#31d3bd" />
           <div className="grid gap-4 md:grid-cols-2">
             {notes.map((n, i) => (
               <Reveal key={n.id} delay={i * 80}>

@@ -49,7 +49,6 @@ export default function Player({ queue, idx, onIdx }: Props) {
   const [ready, setReady] = useState(false);
   const [auto, setAuto] = useState(true);
   const [muted, setMuted] = useState(true);
-  const [viewers, setViewers] = useState(214);
 
   const autoRef = useRef(auto);
   autoRef.current = auto;
@@ -121,14 +120,6 @@ export default function Player({ queue, idx, onIdx }: Props) {
     if (queue.length > 0 && idx >= queue.length) onIdx(0);
   }, [queue.length, idx, onIdx]);
 
-  /* espectadores "en vivo" (ambiente) */
-  useEffect(() => {
-    const t = setInterval(() => {
-      setViewers((v) => Math.max(120, Math.min(480, v + Math.round((Math.random() - 0.48) * 14))));
-    }, 4000);
-    return () => clearInterval(t);
-  }, []);
-
   const toggleMute = () => {
     const p = playerRef.current;
     try {
@@ -162,13 +153,6 @@ export default function Player({ queue, idx, onIdx }: Props) {
             <p className="min-w-0 flex-1 truncate text-sm font-semibold text-paper drop-shadow">
               {current ? current.title : "Sin señal"}
             </p>
-            <span className="hidden items-center gap-1.5 font-mono text-[11px] text-paper/85 sm:flex">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <circle cx="12" cy="8" r="3.4" stroke="currentColor" strokeWidth="1.8" />
-                <path d="M5 20c1.2-3.4 3.8-5.2 7-5.2s5.8 1.8 7 5.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
-              {viewers} viendo
-            </span>
           </div>
 
           {/* panel para contenido externo (TikTok / Instagram / web) */}
