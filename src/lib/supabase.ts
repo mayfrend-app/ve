@@ -67,9 +67,63 @@ export const PLATFORM_META: Record<string, { label: string; color: string }> = {
   drive: { label: "Google Drive", color: "#a78bfa" },
   mega: { label: "Mega", color: "#ff5c4d" },
   filetransfer: { label: "FileTransfer", color: "#31d3bd" },
+  archivo: { label: "Archivo local", color: "#ffb224" },
   web: { label: "Web", color: "#97a1b4" },
   otro: { label: "Otro", color: "#97a1b4" },
 };
+
+/* --------------------- Escáner de la carpeta public/ --------------------- */
+
+export type AssetKind = "app" | "video" | "image";
+
+export interface PublicAsset {
+  id: string;
+  kind: AssetKind;
+  name: string;
+  path: string;
+  note: string;
+  source: "manifest" | "admin";
+  created_at: string;
+}
+
+export async function fetchPublicAssetsDb(): Promise<PublicAsset[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("public_assets")
+    .select("*")
+    .order("created_at", { ascending: true });
+  if (error || !data) return [];
+  return (data as Omit<PublicAsset, "source">[]).map((r) => ({ ...r, source: "admin" as const }));
+}
+
+export async function insertPublicAsset(input: {
+  kind: AssetKind;
+  name: string;
+  path: string;
+  note: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  if (!supabase) return { ok: false, error: "Supabase no está configurado." };
+  const { error } = await supabase.from("public_assets").insert({
+    kind: input.kind,
+    name: input.name.trim(),
+    path: input.path.trim(),
+    note: input.note.trim(),
+  });
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+export async function deletePublicAsset(id: string): Promise<{ ok: boolean; error?: string }> {
+  if (!supabase) return { ok: false, error: "Supabase no está configurado." };
+  const { error } = await supabase.from("public_assets").delete().eq("id", id);
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+/** Resuelve rutas locales ("/apps/x.apk") contra la base del sitio; las URLs externas pasan igual. */
+export function resolveAssetUrl(path: string): string {
+  if (/^(https?:|data:|blob:)/i.test(path)) return path;
+  const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+  return path.startsWith("/") ? `${base}${path}` : `${base}/${path}`;
+}
 
 /* Métodos de donación disponibles en el panel */
 export const DONATION_METHODS: Record<string, { label: string; color: string; hint: string }> = {

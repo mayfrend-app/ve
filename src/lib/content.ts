@@ -15,6 +15,28 @@ export function youtubeId(url: string): string | null {
 export const ytThumb = (id: string, q: "mqdefault" | "hqdefault" = "mqdefault") =>
   `https://i.ytimg.com/vi/${id}/${q}.jpg`;
 
+/** ¿Es un archivo de video reproducible directamente (mp4, webm, mov…)? */
+export function isDirectVideo(item: { url: string; platform: string }): boolean {
+  if (item.platform === "archivo") return true;
+  return /\.(mp4|webm|ogv|mov|m4v)(\?|#|$)/i.test(item.url ?? "");
+}
+
+export function directVideoExt(url: string): string {
+  const m = (url ?? "").match(/\.([a-z0-9]{2,5})(\?|#|$)/i);
+  return m ? m[1].toUpperCase() : "VIDEO";
+}
+
+/** Detecta la plataforma de un enlace para prellenar formularios. */
+export function detectPlatform(url: string): string {
+  if (youtubeId(url)) return "youtube";
+  if (/tiktok\.com/i.test(url)) return "tiktok";
+  if (/instagram\.com/i.test(url)) return "instagram";
+  if (/drive\.google\.com/i.test(url)) return "drive";
+  if (/mega\.nz/i.test(url)) return "mega";
+  if (/filetransfer|wetransfer/i.test(url)) return "filetransfer";
+  return "web";
+}
+
 export type Result = { ok: boolean; error?: string };
 
 const NO_DB: Result = { ok: false, error: "Supabase no está configurado." };

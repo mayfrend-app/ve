@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Play, SkipForward, SkipBack, Volume2, VolumeX } from "lucide-react";
+import { Play, SkipForward, SkipBack, Volume2, VolumeX, Film } from "lucide-react";
 import type { ContentItem } from "../lib/supabase";
-import { PLATFORM_META } from "../lib/supabase";
-import { youtubeId, ytThumb } from "../lib/content";
+import { PLATFORM_META, resolveAssetUrl } from "../lib/supabase";
+import { youtubeId, ytThumb, isDirectVideo, directVideoExt } from "../lib/content";
 import { PlatformIcon } from "./Icons";
 
 /* ------------------------- carga de la API de YouTube ------------------------- */
@@ -58,8 +58,10 @@ export default function Player({ queue, idx, onIdx }: Props) {
   lenRef.current = queue.length;
 
   const current = queue[idx] ?? null;
-  const vid = current ? youtubeId(current.url) : null;
-  const isExternal = Boolean(current) && !vid;
+  const isFile = current ? isDirectVideo(current) : false;
+  const vid = current && !isFile ? youtubeId(current.url) : null;
+  const isExternal = Boolean(current) && !vid && !isFile;
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const onIdxRef = useRef(onIdx);
   onIdxRef.current = onIdx;
@@ -120,6 +122,16 @@ export default function Player({ queue, idx, onIdx }: Props) {
     if (queue.length > 0 && idx >= queue.length) onIdx(0);
   }, [queue.length, idx, onIdx]);
 
+  /* al reproducir un archivo local, silenciar el iframe de YouTube que queda debajo */
+  useEffect(() => {
+    if (!isFile) return;
+    try {
+      playerRef.current?.pauseVideo?.();
+    } catch {
+      /* noop */
+    }
+  }, [isFile, vid]);
+
   const toggleMute = () => {
     const p = playerRef.current;
     try {
@@ -128,6 +140,7 @@ export default function Player({ queue, idx, onIdx }: Props) {
     } catch {
       /* noop */
     }
+    if (videoRef.current) videoRef.current.muted = !muted;
     setMuted(!muted);
   };
 
@@ -154,6 +167,27 @@ export default function Player({ queue, idx, onIdx }: Props) {
               {current ? current.title : "Sin señal"}
             </p>
           </div>
+
+          {/* reproductor de archivo local (mp4 / webm / mov…) */}
+          {isFile && current && (
+            <div className="absolute inset-0 z-20 bg-black">
+              <video
+                key={current.id}
+                ref={videoRef}
+                src={resolveAssetUrl(current.url)}
+                className="h-full w-full object-contain"
+                controls
+                autoPlay
+                muted={muted}
+                playsInline
+                onEnded={() => {
+                  if (autoRef.current && lenRef.current > 1) {
+                    onIdxRef.current((idxRef.current + 1) % lenRef.current);
+                  }
+                }}
+              />
+            </div>
+          )}
 
           {/* panel para contenido externo (TikTok / Instagram / web) */}
           {isExternal && current && (
@@ -281,7 +315,8 @@ export default function Player({ queue, idx, onIdx }: Props) {
             <p className="px-3 py-6 text-center text-sm text-fog">La cartelera está vacía.</p>
           )}
           {queue.map((v, i) => {
-            const id = youtubeId(v.url);
+            const file = isDirectVideo(v);
+            const id = file ? null : youtubeId(v.url);
             const active = i === idx;
             return (
               <button
@@ -301,6 +336,13 @@ export default function Player({ queue, idx, onIdx }: Props) {
                       loading="lazy"
                       className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                     />
+                  ) : file ? (
+                    <span className="flex h-full w-full flex-col items-center justify-center gap-0.5 text-amber">
+                      <Film size={18} />
+                      <span className="font-mono text-[9px] font-bold tracking-widest">
+                        {directVideoExt(v.url)}
+                      </span>
+                    </span>
                   ) : (
                     <span
                       className="flex h-full w-full items-center justify-center"

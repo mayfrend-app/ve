@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronUp,
   ChevronDown,
@@ -14,23 +14,42 @@ import {
   MonitorPlay,
   Loader2,
   Upload,
+  RefreshCw,
+  FolderOpen,
+  Link2,
+  CheckCircle2,
+  XCircle,
+  FileVideo,
+  AppWindow,
+  ImagePlus,
+  ExternalLink,
 } from "lucide-react";
 import {
   TYPE_META,
   PLATFORM_META,
   DONATION_METHODS,
   uploadToStorage,
+  resolveAssetUrl,
   type ContentType,
   type ContentItem,
   type Donation,
+  type AssetKind,
+  type PublicAsset,
 } from "../lib/supabase";
-import type { ContentInput, DonationInput } from "../lib/content";
+import { detectPlatform, type ContentInput, type DonationInput } from "../lib/content";
 import type { ContentApi } from "../hooks/useContent";
+import { usePublicAssets, verifyAsset, type PublicAssetsApi, type VerifyState } from "../hooks/usePublicAssets";
 import ImagePicker from "./ImagePicker";
 
-type Tab = ContentType | "donaciones";
+type Tab = ContentType | "donaciones" | "archivos";
 
-const TABS: Tab[] = ["video", "banner", "anuncio", "app", "descarga", "codigo", "nota", "donaciones"];
+const TABS: Tab[] = ["video", "banner", "anuncio", "app", "descarga", "codigo", "nota", "archivos", "donaciones"];
+
+export interface Seed {
+  type: ContentType;
+  data: Partial<ContentInput>;
+  ts: number;
+}
 
 interface Props {
   api: ContentApi;
@@ -60,7 +79,7 @@ const emptyDonation = (): DonationInput => ({
 });
 
 const PLATFORM_OPTIONS: Record<string, string[]> = {
-  video: ["youtube", "tiktok", "instagram", "web"],
+  video: ["youtube", "archivo", "tiktok", "instagram", "web"],
   app: ["web", "youtube", "otro"],
   descarga: ["drive", "mega", "filetransfer", "web", "otro"],
 };
@@ -96,6 +115,14 @@ function ActiveToggle({ value, onChange }: { value: boolean; onChange: (v: boole
 
 export default function Admin({ api, userEmail, onSignOut, onViewLobby, toast }: Props) {
   const [tab, setTab] = useState<Tab>("video");
+  const [seed, setSeed] = useState<Seed | null>(null);
+  const assetsApi = usePublicAssets();
+
+  const useAsset = (s: Omit<Seed, "ts">) => {
+    setTab(s.type);
+    setSeed({ ...s, ts: Date.now() });
+    toast("info", `Formulario de ${TYPE_META[s.type].label.toLowerCase()} preparado con el archivo detectado.`);
+  };
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 pb-20 sm:px-6">
@@ -147,21 +174,24 @@ export default function Admin({ api, userEmail, onSignOut, onViewLobby, toast }:
       <div className="flex flex-wrap gap-1.5 border-b border-line pb-3">
         {TABS.map((t) => {
           const isDon = t === "donaciones";
-          const count = isDon ? api.donations.length : api.items.filter((i) => i.type === t).length;
+          const isFiles = t === "archivos";
+          const count = isDon
+            ? api.donations.length
+            : isFiles
+              ? assetsApi.assets.length
+              : api.items.filter((i) => i.type === t).length;
+          const activeCls = isDon ? "bg-coral text-ink" : isFiles ? "bg-teal text-ink" : "bg-amber text-ink";
           return (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`btn-press rounded-lg px-3 py-2 text-[13px] font-bold transition ${
-                tab === t
-                  ? isDon
-                    ? "bg-coral text-ink"
-                    : "bg-amber text-ink"
-                  : "text-fog hover:bg-panel-2 hover:text-paper"
+              className={`btn-press flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-bold transition ${
+                tab === t ? activeCls : "text-fog hover:bg-panel-2 hover:text-paper"
               }`}
             >
-              {isDon ? "Donaciones" : TYPE_META[t].label}
-              <span className={`ml-1.5 font-mono text-[10px] ${tab === t ? "opacity-70" : "text-fog"}`}>
+              {isFiles && <FolderOpen size={13} />}
+              {isDon ? "Donaciones" : isFiles ? "Archivos" : TYPE_META[t].label}
+              <span className={`ml-0.5 font-mono text-[10px] ${tab === t ? "opacity-70" : "text-fog"}`}>
                 {count}
               </span>
             </button>
@@ -171,8 +201,10 @@ export default function Admin({ api, userEmail, onSignOut, onViewLobby, toast }:
 
       {tab === "donaciones" ? (
         <DonationsSection api={api} toast={toast} />
+      ) : tab === "archivos" ? (
+        <FilesSection api={assetsApi} onUse={useAsset} toast={toast} />
       ) : (
-        <ContentSection api={api} tab={tab} toast={toast} />
+        <ContentSection api={api} tab={tab} toast={toast} seed={seed} />
       )}
     </main>
   );
@@ -184,10 +216,12 @@ function ContentSection({
   api,
   tab,
   toast,
+  seed,
 }: {
   api: ContentApi;
   tab: ContentType;
   toast: Props["toast"];
+  seed: Seed | null;
 }) {
   const [form, setForm] = useState<ContentInput>(emptyForm(tab));
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -196,6 +230,14 @@ function ContentSection({
   const [uploadingFile, setUploadingFile] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  /* prellenado desde el escáner de archivos */
+  useEffect(() => {
+    if (!seed || seed.type !== tab) return;
+    setForm({ ...emptyForm(seed.type), ...seed.data });
+    setEditingId(null);
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [seed, tab]);
 
   const group = useMemo(
     () =>
@@ -699,5 +741,424 @@ function DonationsSection({ api, toast }: { api: ContentApi; toast: Props["toast
         )}
       </div>
     </div>
+  );
+}
+
+/* ========================= SECCIÓN ARCHIVOS (ESCÁNER public/) ========================= */
+
+const KIND_META: Record<
+  AssetKind,
+  { label: string; plural: string; folder: string; color: string; action: string; hint: string }
+> = {
+  app: {
+    label: "Aplicación",
+    plural: "Aplicaciones y programas",
+    folder: "public/apps",
+    color: "#31d3bd",
+    action: "Publicar descarga",
+    hint: "APK, ZIP, EXE…",
+  },
+  video: {
+    label: "Video",
+    plural: "Videos",
+    folder: "public/videos",
+    color: "#ff5c4d",
+    action: "Incorporar video",
+    hint: "MP4, WEBM… se reproducen en el lobby",
+  },
+  image: {
+    label: "Imagen",
+    plural: "Imágenes",
+    folder: "public/imagenes",
+    color: "#ffb224",
+    action: "Usar en publicación",
+    hint: "PNG, JPG… para banners y carteles",
+  },
+};
+
+function KindGlyph({ kind, size = 16 }: { kind: AssetKind; size?: number }) {
+  if (kind === "app") return <AppWindow size={size} />;
+  if (kind === "video") return <FileVideo size={size} />;
+  return <ImagePlus size={size} />;
+}
+
+function FilesSection({
+  api,
+  onUse,
+  toast,
+}: {
+  api: PublicAssetsApi;
+  onUse: (s: Omit<Seed, "ts">) => void;
+  toast: Props["toast"];
+}) {
+  const [kind, setKind] = useState<AssetKind>("app");
+  const [name, setName] = useState("");
+  const [path, setPath] = useState("");
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const submit = async () => {
+    if (!path.trim())
+      return toast("err", "Escribe la ruta del archivo (ej: /videos/clase.mp4) o pega un enlace.");
+    setSaving(true);
+    const res = await api.add({
+      kind,
+      name: name.trim() || path.trim().split("/").pop() || path.trim(),
+      path: path.trim(),
+      note: note.trim(),
+    });
+    setSaving(false);
+    if (!res.ok) return toast("err", `No se pudo registrar: ${res.error}`);
+    toast("ok", "Archivo registrado en el escáner ✓");
+    setName("");
+    setPath("");
+    setNote("");
+  };
+
+  const upload = async (f: File) => {
+    setUploading(true);
+    const bucket = kind === "image" ? "banners" : "descargas";
+    const res = await uploadToStorage(bucket, f);
+    setUploading(false);
+    if (res.ok && res.url) {
+      setPath(res.url);
+      if (!name.trim()) setName(f.name);
+      toast("ok", "Archivo subido al almacenamiento. Ahora regístralo.");
+    } else toast("err", `No se pudo subir: ${res.error}`);
+  };
+
+  const use = (a: PublicAsset) => {
+    const resolved = resolveAssetUrl(a.path);
+    if (a.kind === "app")
+      onUse({
+        type: "descarga",
+        data: { title: a.name, description: a.note, url: resolved, platform: detectPlatform(a.path) },
+      });
+    else if (a.kind === "video")
+      onUse({
+        type: "video",
+        data: {
+          title: a.name,
+          description: a.note,
+          url: resolved,
+          platform: a.path.startsWith("/") ? "archivo" : detectPlatform(a.path),
+        },
+      });
+    else onUse({ type: "banner", data: { title: a.name, description: a.note, image_url: resolved } });
+  };
+
+  const groups = (["app", "video", "image"] as AssetKind[]).map((k) => ({
+    k,
+    list: api.assets.filter((a) => a.kind === k),
+  }));
+
+  return (
+    <div className="mt-6 space-y-6">
+      {/* --------------------------- cabecera del escáner --------------------------- */}
+      <div className="card relative overflow-hidden">
+        {api.scanning && <div className="scanline" />}
+        <div className="flex flex-wrap items-center gap-4 p-5">
+          <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-teal/40 bg-teal/10 text-teal">
+            <FolderOpen size={22} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="flex items-center gap-2 font-display text-lg font-extrabold text-paper">
+              Escáner de <code className="font-mono text-base text-teal">public/</code>
+              {api.scanning && <Loader2 size={14} className="animate-spin text-teal" />}
+            </p>
+            <p className="mt-0.5 text-[13px] text-fog">
+              Detecta aplicaciones, videos e imágenes de tu carpeta <span className="font-mono text-paper">public/</span>{" "}
+              para agregarlos a las publicaciones con un clic.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {api.lastScan && (
+              <span className="font-mono text-[11px] text-fog">
+                {api.lastScan.toLocaleTimeString("es-ES")}
+              </span>
+            )}
+            <button
+              onClick={() => api.scan()}
+              className="btn-press flex items-center gap-2 rounded-lg border border-teal/50 bg-teal/10 px-3.5 py-2 text-[13px] font-bold text-teal transition hover:bg-teal/20"
+            >
+              <RefreshCw size={14} className={api.scanning ? "animate-spin" : ""} />
+              Re-escanear
+            </button>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-t border-line bg-ink-2/60 px-5 py-3">
+          {(["public/apps", "public/videos", "public/imagenes", "public/assets.json"] as const).map((f) => (
+            <code
+              key={f}
+              className="rounded-md border border-line bg-panel px-2 py-1 font-mono text-[11px] text-teal"
+            >
+              {f}
+            </code>
+          ))}
+          <span className="text-[12px] text-fog">
+            Coloca tus archivos en esas carpetas y regístralos aquí o en el manifiesto.
+          </span>
+        </div>
+      </div>
+
+      {/* ----------------------------- formulario agregar ----------------------------- */}
+      <div className="card p-5">
+        <p className="flex items-center gap-2 font-display text-base font-extrabold text-paper">
+          <Plus size={15} className="text-teal" /> Registrar un archivo en el escáner
+        </p>
+        <div className="mt-4 grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+          <div className="space-y-3">
+            <span className="kicker block text-fog">Tipo de archivo</span>
+            <div className="grid gap-1.5">
+              {(Object.keys(KIND_META) as AssetKind[]).map((k) => (
+                <button
+                  key={k}
+                  onClick={() => setKind(k)}
+                  className={`btn-press flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-[13px] font-bold transition ${
+                    kind === k
+                      ? "border-teal/60 bg-teal/10 text-teal"
+                      : "border-line bg-panel text-fog hover:text-paper"
+                  }`}
+                >
+                  <span style={{ color: KIND_META[k].color }}>
+                    <KindGlyph kind={k} size={15} />
+                  </span>
+                  <span className="flex-1">{KIND_META[k].label}</span>
+                  <span className="font-mono text-[10px] font-normal opacity-70">{KIND_META[k].hint}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-3.5">
+            <div className="grid gap-3.5 sm:grid-cols-2">
+              <Field label="Nombre">
+                <input
+                  className="input"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={`Ej: ${KIND_META[kind].label} de bienvenida`}
+                />
+              </Field>
+              <Field label="Ruta en public/ o enlace">
+                <input
+                  className="input font-mono text-[13px]"
+                  value={path}
+                  onChange={(e) => setPath(e.target.value)}
+                  placeholder={
+                    kind === "video"
+                      ? "/videos/clase-01.mp4 o https://…"
+                      : kind === "app"
+                        ? "/apps/mi-app.apk o https://drive.google.com/…"
+                        : "/imagenes/promo.png o https://…"
+                  }
+                />
+              </Field>
+            </div>
+            <Field label="Nota (opcional)">
+              <input
+                className="input"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Versión, tamaño, descripción breve…"
+              />
+            </Field>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="btn-press flex items-center gap-2 rounded-lg border border-line bg-panel px-4 py-2.5 text-[13px] font-bold text-paper transition hover:border-teal/60 disabled:opacity-50"
+              >
+                {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} className="text-teal" />}
+                {uploading ? "Subiendo…" : "Subir archivo"}
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) upload(f);
+                  e.target.value = "";
+                }}
+              />
+              <button
+                onClick={submit}
+                disabled={saving}
+                className="btn-press flex items-center gap-2 rounded-lg bg-teal px-4 py-2.5 text-[13px] font-bold text-ink transition hover:brightness-110 disabled:opacity-50"
+              >
+                {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                Registrar en el escáner
+              </button>
+              <span className="text-[12px] text-fog">
+                Acepta rutas locales de <span className="font-mono">public/</span>, Drive, Mega, FileTransfer o cualquier URL.
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ------------------------------- grupos detectados ------------------------------- */}
+      {groups.map(({ k, list }) => (
+        <div key={k} className="card overflow-hidden">
+          <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+            <p className="flex items-center gap-2.5 font-display text-base font-extrabold text-paper">
+              <span style={{ color: KIND_META[k].color }}>
+                <KindGlyph kind={k} size={17} />
+              </span>
+              {KIND_META[k].plural}
+            </p>
+            <span className="font-mono text-[11px] tracking-widest text-fog">
+              [{String(list.length).padStart(2, "0")}]
+            </span>
+          </div>
+          {list.length === 0 ? (
+            <p className="px-5 py-6 text-center text-[13px] text-fog">
+              Nada detectado en <span className="font-mono text-teal">{KIND_META[k].folder}</span>. Agrega un
+              archivo con el formulario de arriba.
+            </p>
+          ) : (
+            <ul className="divide-y divide-line/70">
+              {list.map((a) => (
+                <AssetRow
+                  key={a.id}
+                  a={a}
+                  actionLabel={KIND_META[k].action}
+                  color={KIND_META[k].color}
+                  kind={k}
+                  onUse={() => use(a)}
+                  onRemove={async () => {
+                    const res = await api.remove(a.id);
+                    if (!res.ok) toast("err", `No se pudo quitar: ${res.error}`);
+                    else toast("ok", "Archivo quitado del escáner.");
+                  }}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AssetRow({
+  a,
+  kind,
+  actionLabel,
+  color,
+  onUse,
+  onRemove,
+}: {
+  a: PublicAsset;
+  kind: AssetKind;
+  actionLabel: string;
+  color: string;
+  onUse: () => void;
+  onRemove: () => void;
+}) {
+  const [status, setStatus] = useState<VerifyState>("checking");
+  const [confirm, setConfirm] = useState(false);
+
+  useEffect(() => {
+    let on = true;
+    setStatus("checking");
+    verifyAsset(a.path).then((s) => {
+      if (on) setStatus(s);
+    });
+    return () => {
+      on = false;
+    };
+  }, [a.path]);
+
+  const isLocal = a.path.startsWith("/");
+
+  return (
+    <li className="flex flex-wrap items-center gap-3 px-5 py-3 transition hover:bg-panel-2/50 sm:flex-nowrap">
+      <span
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-ink-2"
+        style={{ color }}
+      >
+        <KindGlyph kind={kind} size={16} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-paper">
+          <span className="truncate">{a.name}</span>
+          <span
+            className={`rounded px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest ${
+              a.source === "manifest" ? "bg-amber/15 text-amber" : "bg-teal/15 text-teal"
+            }`}
+          >
+            {a.source === "manifest" ? "assets.json" : "panel"}
+          </span>
+        </p>
+        <p className="mt-0.5 flex items-center gap-1.5 truncate font-mono text-[11px] text-fog" title={a.path}>
+          {/^https?:\/\//i.test(a.path) ? <Link2 size={11} className="shrink-0" /> : null}
+          <span className="truncate">{a.path}</span>
+          {a.note && <span className="shrink-0 font-sans text-fog/80">· {a.note}</span>}
+        </p>
+      </div>
+
+      {/* estado de verificación */}
+      <span
+        className={`flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
+          status === "ok"
+            ? "bg-teal/12 text-teal"
+            : status === "missing"
+              ? "bg-coral/12 text-coral"
+              : "bg-panel-2 text-fog"
+        }`}
+      >
+        {status === "checking" ? (
+          <>
+            <Loader2 size={11} className="animate-spin" /> comprobando
+          </>
+        ) : status === "ok" ? (
+          <>
+            <CheckCircle2 size={11} /> disponible
+          </>
+        ) : status === "missing" ? (
+          <>
+            <XCircle size={11} /> no encontrado
+          </>
+        ) : (
+          <>
+            <ExternalLink size={11} /> enlace externo
+          </>
+        )}
+      </span>
+
+      <div className="flex shrink-0 items-center gap-1.5">
+        <button
+          onClick={onUse}
+          disabled={isLocal && status === "missing"}
+          title={isLocal && status === "missing" ? "El archivo no existe en public/" : undefined}
+          className="btn-press rounded-lg border border-amber/60 bg-amber/10 px-3 py-2 text-[12px] font-bold text-amber transition hover:bg-amber hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {actionLabel}
+        </button>
+        {a.source === "admin" &&
+          (confirm ? (
+            <button
+              onClick={() => {
+                setConfirm(false);
+                onRemove();
+              }}
+              className="btn-press rounded-md bg-coral px-2 py-1.5 text-[11px] font-bold text-ink"
+            >
+              ¿Seguro?
+            </button>
+          ) : (
+            <button
+              onClick={() => setConfirm(true)}
+              aria-label="Quitar del escáner"
+              className="btn-press rounded-md p-1.5 text-fog transition hover:bg-panel-2 hover:text-coral"
+            >
+              <Trash2 size={15} />
+            </button>
+          ))}
+      </div>
+    </li>
   );
 }

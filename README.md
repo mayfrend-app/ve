@@ -15,8 +15,19 @@ todos, al instante y en todos los dispositivos.
   enlaces de Drive, Mega, FileTransfer…).
 - 🎟️ **Códigos y cupones** listos para copiar y canjear.
 - 📝 **Notas e información** importante para la comunidad.
+- 📦 **Descargas** de aplicaciones, programas, juegos, videos y manuales.
 
 Todo lo que se publica aparece en la web al momento, sin necesidad de recargar.
+
+## 🗂️ Escáner de archivos
+
+El panel de administración incluye un **escáner de la carpeta `public/`**: detecta aplicaciones,
+videos e imágenes listos para incorporar a las publicaciones con un clic.
+
+- Coloca tus archivos en `public/apps`, `public/videos` o `public/imagenes`.
+- Los videos se reproducen directamente en el lobby; las apps se publican como descarga y las
+  imágenes se usan en banners.
+- También puedes registrar enlaces de Drive, Mega o FileTransfer, o subir archivos desde el panel.
 
 ## ❤️ Donaciones
 

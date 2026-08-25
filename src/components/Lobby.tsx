@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowUpRight, Copy, Check, ExternalLink, FileText } from "lucide-react";
+import { ArrowUpRight, Copy, Check, ExternalLink, FileText, Film } from "lucide-react";
 import type { ContentItem } from "../lib/supabase";
 import { PLATFORM_META } from "../lib/supabase";
-import { youtubeId, ytThumb } from "../lib/content";
+import { youtubeId, ytThumb, isDirectVideo, directVideoExt } from "../lib/content";
 import Player from "./Player";
 import { PlatformIcon, FileBoxIcon, DownloadIcon } from "./Icons";
 
@@ -87,7 +87,8 @@ function VideoCard({
   big?: boolean;
   onPlay: () => void;
 }) {
-  const id = youtubeId(v.url);
+  const file = isDirectVideo(v);
+  const id = file ? null : youtubeId(v.url);
   const meta = PLATFORM_META[v.platform] ?? PLATFORM_META.web;
   return (
     <button
@@ -106,6 +107,13 @@ function VideoCard({
             loading="lazy"
             className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.05]"
           />
+        ) : file ? (
+          <div className="drift-grad absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-panel-2 via-ink-2 to-panel-2 text-amber">
+            <Film size={big ? 46 : 30} className="transition duration-300 group-hover:scale-110" />
+            <span className="font-mono text-[10px] font-bold tracking-[0.2em]">
+              {directVideoExt(v.url)} · ARCHIVO
+            </span>
+          </div>
         ) : (
           <div
             className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-panel-2 to-ink-2"

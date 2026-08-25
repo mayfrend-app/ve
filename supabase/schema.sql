@@ -114,7 +114,41 @@ create policy "descargas_admin_insert" on storage.objects for insert with check 
 drop policy if exists "descargas_admin_delete" on storage.objects;
 create policy "descargas_admin_delete" on storage.objects for delete using (bucket_id = 'descargas' and public.is_admin());
 
--- 5) Tiempo real: publica cambios de content y donations a todos -------------
+-- 4.5) Escáner de public/: archivos agregados por el administrador -----------
+-- (se combinan con el manifiesto public/assets.json del repositorio)
+create table if not exists public.public_assets (
+  id         uuid primary key default gen_random_uuid(),
+  kind       text not null check (kind in ('app','video','image')),
+  name       text not null default '',
+  path       text not null,
+  note       text not null default '',
+  created_at timestamptz not null default now()
+);
+
+alter table public.public_assets enable row level security;
+
+drop policy if exists "public_assets_public_read" on public.public_assets;
+create policy "public_assets_public_read"
+  on public.public_assets for select
+  using (true);
+
+drop policy if exists "public_assets_admin_insert" on public.public_assets;
+create policy "public_assets_admin_insert"
+  on public.public_assets for insert
+  with check (public.is_admin());
+
+drop policy if exists "public_assets_admin_update" on public.public_assets;
+create policy "public_assets_admin_update"
+  on public.public_assets for update
+  using (public.is_admin())
+  with check (public.is_admin());
+
+drop policy if exists "public_assets_admin_delete" on public.public_assets;
+create policy "public_assets_admin_delete"
+  on public.public_assets for delete
+  using (public.is_admin());
+
+-- 5) Tiempo real: publica cambios de content, donations y public_assets ------
 do $$
 begin
   if not exists (
@@ -128,6 +162,12 @@ begin
     where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'donations'
   ) then
     alter publication supabase_realtime add table public.donations;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'public_assets'
+  ) then
+    alter publication supabase_realtime add table public.public_assets;
   end if;
 end $$;
 
